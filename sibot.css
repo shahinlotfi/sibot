@@ -9,6 +9,8 @@
   /* one hover: up and back down; the breath runs on its own, a little slower */
   --hover: 3.6s;
   --breath: 4.6s;
+  /* the pill floats on its own, quicker and out of step with the head */
+  --pill-hover: 2.7s;
 }
 
 * {
@@ -83,6 +85,19 @@ body {
     opacity: 0.7;
   }
 }
+/* the pill drifting about the head (drawing units): `translate`, apart from the pose on `transform` */
+@keyframes pill-hover {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  30% {
+    translate: 0.6px -3.2px;
+  }
+  65% {
+    translate: -0.5px 1.6px;
+  }
+}
 /* breathing: in a touch wider and taller, from the bottom of the head */
 @keyframes breathe {
   0%,
@@ -116,6 +131,7 @@ body {
   transform-origin: center;
 }
 .sibot .sibot-pill {
+  animation: pill-hover var(--pill-hover) ease-in-out -0.9s infinite;
   transform: translate(calc(var(--sibot-pill-x, 0) * 1px), calc(var(--sibot-pill-y, 0) * 1px))
     rotate(calc(var(--sibot-pill-r, 0) * 1deg));
 }
@@ -129,7 +145,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .bot,
   .floor,
-  .sibot {
+  .sibot,
+  .sibot .sibot-pill {
     animation: none;
   }
 }
