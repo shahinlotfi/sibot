@@ -2,7 +2,6 @@
   color-scheme: light;
   --bg: #eceef2;
   --bg-2: #dfe2e8;
-  --glow: 255, 91, 31; /* the accent, for the glow's rgba() */
   --accent: #ff5b1f; /* SIbot's body */
   --sibot-eye: #fff;
   /* 64 % of the browser: of the shorter side, so it always fits */
@@ -46,50 +45,21 @@ body {
   width: var(--size);
   height: var(--size);
   color: var(--accent);
-  /* glowing, all in the accent: a tight rim, a haze, and two wider ones fading out into the room */
-  filter: drop-shadow(0 0 calc(var(--size) * 0.01) rgba(var(--glow), 0.95))
-    drop-shadow(0 0 calc(var(--size) * 0.04) rgba(var(--glow), 0.95))
-    drop-shadow(0 0 calc(var(--size) * 0.11) rgba(var(--glow), 0.8))
-    drop-shadow(0 0 calc(var(--size) * 0.24) rgba(var(--glow), 0.5));
+  filter: drop-shadow(0 calc(var(--size) * 0.04) calc(var(--size) * 0.06) rgba(20, 26, 36, 0.18));
   transform-origin: 50% 85%;
   will-change: transform;
   /* hovering: `translate`, apart from the lean and shake sibot.js sets on `transform` */
   animation: hover var(--hover) ease-in-out infinite;
 }
 
-/* the light it throws on the room around it, swelling with its breath */
-.stage::before {
-  content: '';
-  /* out of the grid: it's bigger than the window and would push the bot off centre */
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: calc(var(--size) * 1.9);
-  height: calc(var(--size) * 1.9);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(var(--glow), 0.32), rgba(var(--glow), 0.1) 55%, transparent);
-  animation: halo var(--breath) ease-in-out infinite;
-}
-@keyframes halo {
-  0%,
-  100% {
-    opacity: 0.85;
-    scale: 1;
-  }
-  45% {
-    opacity: 1;
-    scale: 1.04;
-  }
-}
-
-/* where it sits: its light pooled on the floor just under the head */
+/* where it sits: a soft shadow just under the head */
 .floor {
   grid-area: 1 / 1;
   width: calc(var(--size) * 0.5);
   height: calc(var(--size) * 0.07);
   translate: 0 calc(var(--size) * 0.39);
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(var(--glow), 0.45), transparent);
+  background: radial-gradient(closest-side, rgba(20, 26, 36, 0.22), transparent);
   will-change: transform;
   /* smaller and fainter as it rises */
   animation: shadow var(--hover) ease-in-out infinite;
@@ -185,7 +155,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stage::before,
   .bot,
   .floor,
   .sibot,
