@@ -3,9 +3,10 @@
  * the pointer; here it stays put and only turns to look.
  *
  * Its eyes look toward the pointer, all the way to the rims once the pointer is past the head. While the pointer
- * moves, the pill goes the way the eyes do, as in the drawing: up to the head's top edge looking up, down to its
- * bottom edge looking down, turned ±45° looking on a diagonal, level looking sideways. It leans a little toward the
- * pointer. Once the pointer stops, the pill settles level and the eyes stay on it.
+ * moves, the pill goes the way the eyes do: up to the head's top edge looking up, down to its bottom edge looking
+ * down, tipped a little looking on a diagonal (right end up looking down-right, the other way round from Floorstack),
+ * level looking sideways. It leans a little toward the pointer. Once the pointer stops, the pill settles level and the
+ * eyes stay on it.
  *
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
  * circled and the pupils roll round their eyes, both slowing to a stop, then it shakes it off and looks again.
@@ -28,6 +29,8 @@ const GAZE_HOLD = 450;
 const MOVING = 0.4;
 /** ms for the pill to swing to a new look, and back level once it stops */
 const PILL_MS = 110;
+/** the most the pill tips looking on a diagonal (degrees; negative: right end up looking down-right) */
+const PILL_TURN = -14;
 /** the most it leans toward the pointer (degrees) */
 const LEAN = 7;
 /** ms for the lean to follow */
@@ -87,14 +90,14 @@ let last = 0;
 /** the share of a gap closed in `dt` ms by an ease with time constant `tau` */
 const ease = (dt, tau) => (still ? 1 : 1 - Math.exp(-dt / tau));
 
-/** the pill for the look it shows: θ its direction, y down. sin 2θ is ±1 on the diagonals (turn ±45°, right end down
- * looking down-right) and 0 straight across or up and down; cos² 2θ is 1 straight up or down (shift to the edge) */
+/** the pill for the look it shows: θ its direction, y down. sin 2θ is ±1 on the diagonals (tipped `PILL_TURN`) and 0
+ * straight across or up and down; cos² 2θ is 1 straight up or down (shift to the edge) */
 const pill = () => {
   const r = Math.hypot(swing.x, swing.y);
   const th = Math.atan2(swing.y, swing.x);
   return {
     shift: r ? PILL_EDGE * (swing.y / r) * Math.cos(2 * th) ** 2 * r : 0,
-    turn: 45 * Math.sin(2 * th) * r,
+    turn: PILL_TURN * Math.sin(2 * th) * r,
   };
 };
 
