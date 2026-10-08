@@ -57,15 +57,18 @@ body {
 .wordmark {
   grid-area: 1 / 1;
   align-self: start;
-  /* Sixtyfour's letters start 1.4 % of the size below the top of a line-height-1 box: up by that, so they touch the
-     top; and 0.1 of the size in from each side: out by that, so the letters themselves run edge to edge */
-  margin: -0.014em -0.1em 0;
-  font-family: 'Sixtyfour', monospace;
-  /* "SIBot" in Sixtyfour: letters 4.8 times as wide as its size (5 with the space either side) */
-  font-size: calc(100vw / 4.8);
+  /* Honk's letters start 20 % of the size below the top of a line-height-1 box: up by that, so they touch the top;
+     they reach 0.02 of the size before the word's start and 0.028 past its end: room for both, so the letters run
+     edge to edge */
+  margin: -0.2em 0.028em 0 0.02em;
+  font-family: 'Honk', sans-serif;
+  /* "SIBot" in Honk: letters 2.253 times as wide as its size */
+  font-size: calc(100vw / 2.253);
   line-height: 1;
   white-space: nowrap;
-  color: rgba(0, 0, 0, 0.1);
+  /* Honk is a colour font, drawing its own shaded colours over `color`: in greys, the word faded right back */
+  filter: grayscale(1);
+  opacity: 0.1;
   pointer-events: none;
 }
 
