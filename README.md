@@ -15,6 +15,14 @@ Plain HTML, CSS and JavaScript: no build step, no dependencies.
 python3 -m http.server 4719   # then open http://localhost:4719
 ```
 
+## Build
+
+```sh
+./build.sh
+```
+
+Writes the four site files to `dist/` (and `sibot.zip`). Upload the contents of `dist/` to your web root over FTP.
+
 ## Deploy
 
 Any static host works; publish the repo root as it is.
