@@ -10,7 +10,8 @@
  *
  * Grab it and it comes along, reluctantly: it trails the pointer as if through friction, gives less the further it's
  * pulled, leans back against the pull and looks back at the middle. Let go and it springs back there, overshooting a
- * little.
+ * little. Hold on to it for three seconds and it starts to struggle, shaking harder and harder, until it breaks free
+ * and springs back by itself.
  *
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
  * circled and the pupils roll round their eyes, both slowing to a stop, then it shakes it off and looks again.
@@ -57,6 +58,12 @@ const DRAG_MS = 120;
 const RESIST = 9;
 /** let go: the spring back to the middle, in swings per second, and its damping (below 1, it overshoots a little) */
 const SPRING = { hz: 1.6, damp: 0.38 };
+/** held: ms before it starts to struggle, then ms struggling before it breaks free */
+const HOLD = { ms: 3000, struggle: 900 };
+/** struggling: side to side at most as a share of its size, degrees, and how many shakes */
+const STRUGGLE = { x: 0.035, deg: 10, times: 11 };
+/** breaking free: the push back toward the middle, in times its distance from there per second */
+const KICK = 5;
 
 const easeOut = (u) => 1 - (1 - u) ** 3;
 
@@ -98,6 +105,8 @@ const off = { x: 0, y: 0 };
 const vel = { x: 0, y: 0 };
 /** being dragged: by this pointer, from here, and how far it had been pulled when grabbed (before the give) */
 let drag = null;
+/** struggling free: how far through, 0..1; not struggling: -1 */
+let struggle = -1;
 let frame = 0;
 let last = 0;
 
@@ -174,6 +183,12 @@ const draw = (t) => {
     const from = [roll(-Math.PI / 2), roll(Math.PI / 2)];
     eyes = eyes.map((e, i) => [from[i][0] + (e[0] - from[i][0]) * b, from[i][1] + (e[1] - from[i][1]) * b]);
   }
+  if (struggle >= 0) {
+    // struggling: shaking side to side, harder and harder
+    const w = Math.sin(struggle * Math.PI * 2 * STRUGGLE.times) * (0.3 + 0.7 * struggle);
+    jolt += w * STRUGGLE.x * box.size;
+    tilt += w * STRUGGLE.deg;
+  }
   bot.style.transform = `translate(${off.x + jolt}px, ${off.y}px) rotate(${tilt}deg)`;
   // the shadow stays on the floor under it, smaller the higher it's lifted
   const lift = Math.max(0, -off.y) / box.size;
@@ -195,6 +210,16 @@ const step = (t) => {
   pace.y += (moved.y / f - pace.y) * p;
   moved.x = moved.y = 0;
   const run = Math.hypot(pace.x, pace.y);
+
+  // held too long: it struggles, then breaks free and springs back by itself, with a push
+  const held = drag && !still ? (t - drag.t0 - HOLD.ms) / HOLD.struggle : -1;
+  struggle = held < 0 || held >= 1 ? -1 : held;
+  if (held >= 1) {
+    vel.x = -off.x * KICK;
+    vel.y = -off.y * KICK;
+    drag = null;
+    bot.toggleAttribute('data-dragging', false);
+  }
 
   // dragged: it trails where it's pulled to; let go: it springs back to the middle
   if (drag) {
@@ -301,7 +326,7 @@ svg.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   e.target.setPointerCapture(e.pointerId);
   // grabbed mid-spring: carry on from where it is
-  drag = { id: e.pointerId, x: e.clientX, y: e.clientY, pull: pullFor(off) };
+  drag = { id: e.pointerId, x: e.clientX, y: e.clientY, pull: pullFor(off), t0: performance.now() };
   bot.toggleAttribute('data-dragging', true);
   wake();
 });
