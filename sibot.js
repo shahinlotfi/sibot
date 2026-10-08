@@ -3,9 +3,9 @@
  * the pointer; here it stays put and only turns to look.
  *
  * Its eyes look toward the pointer, all the way to the rims once the pointer is past the head. The pill drifts
- * gently the way the eyes look and stays there: a little up looking up, a little down looking down, tipped a little
- * looking on a diagonal (right end down looking up-right or down-right: the same tilt above and below), level
- * looking sideways. It follows where the pointer is, not how it moves, so it doesn't swing out and back with every move. It
+ * gently the way the eyes look and stays there: up as they look up, down as they look down, and tipped as they look
+ * across (right end down looking right, up looking left, the same above and below). Both change smoothly all the way
+ * round, so circling the pointer turns it steadily. It follows where the pointer is, not how it moves, so it doesn't swing out and back with every move. It
  * leans a little toward the pointer.
  *
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
@@ -27,7 +27,7 @@ const GAZE_MS = 70;
 const PILL_MS = 260;
 /** how far the pill shifts looking straight up or down, as a share of the way to the head's edge */
 const PILL_SHIFT = 0.35;
-/** the most the pill tips looking on a diagonal (degrees; positive: right end down looking right) */
+/** the most the pill tips looking all the way to one side (degrees; positive: right end down looking right) */
 const PILL_TURN = 14;
 /** the most it leans toward the pointer (degrees) */
 const LEAN = 7;
@@ -87,17 +87,11 @@ let last = 0;
 /** the share of a gap closed in `dt` ms by an ease with time constant `tau` */
 const ease = (dt, tau) => (still ? 1 : 1 - Math.exp(-dt / tau));
 
-/** the pill for the look it shows: θ its direction, y down. The tilt is the same looking above or below (θ mirrored
- * to the upper half): |sin 2θ| is 1 on the diagonals (tipped `PILL_TURN`, the way it looks across) and 0 straight
- * across or up and down; cos² 2θ is 1 straight up or down (shift to the edge) */
-const pill = () => {
-  const r = Math.hypot(swing.x, swing.y);
-  const th = Math.atan2(swing.y, swing.x);
-  return {
-    shift: r ? PILL_SHIFT * PILL_EDGE * (swing.y / r) * Math.cos(2 * th) ** 2 * r : 0,
-    turn: PILL_TURN * Math.sign(swing.x) * Math.abs(Math.sin(2 * th)) * r,
-  };
-};
+/** the pill for the look it shows (y down): shifted by how far it looks up or down, tipped by how far it looks across */
+const pill = () => ({
+  shift: PILL_SHIFT * PILL_EDGE * swing.y,
+  turn: PILL_TURN * swing.x,
+});
 
 /** the pupils on the eye's inner rim (less a little), the way the gaze points; a touch cross-eyed, as at rest */
 const look = () => {
