@@ -4,7 +4,7 @@ SIbot, the Super Intelligence Bot from Floorstack, on a page of its own. It sits
 the window's shorter side and watches your pointer, hovering and breathing while it waits. Circle the pointer fast a few times and it gets dizzy.
 
 Plain HTML, CSS and JavaScript: no build step, no dependencies. The name in the background is set in
-[Oi](https://fonts.google.com/specimen/Oi), loaded from Google Fonts.
+[Sixtyfour](https://fonts.google.com/specimen/Sixtyfour), loaded from Google Fonts.
 
 - `index.html`: the page and the character's SVG
 - `sibot.css`: layout and the character's shapes, posed through `--sibot-*` custom properties

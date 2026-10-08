@@ -57,12 +57,12 @@ body {
 .wordmark {
   grid-area: 1 / 1;
   align-self: start;
-  /* Oi's tallest letters reach 1.2 % of the size above a line-height-1 box: down by that, so they touch the top
-     rather than being cut by it */
-  margin-top: 0.013em;
-  font-family: 'Oi', serif;
-  /* "SIBot" in Oi is 4.356 times as wide as its size */
-  font-size: calc(100vw / 4.356);
+  /* Sixtyfour's letters start 1.4 % of the size below the top of a line-height-1 box: up by that, so they touch the
+     top; and 0.1 of the size in from each side: out by that, so the letters themselves run edge to edge */
+  margin: -0.014em -0.1em 0;
+  font-family: 'Sixtyfour', monospace;
+  /* "SIBot" in Sixtyfour: letters 4.8 times as wide as its size (5 with the space either side) */
+  font-size: calc(100vw / 4.8);
   line-height: 1;
   white-space: nowrap;
   color: rgba(0, 0, 0, 0.1);
