@@ -9,8 +9,8 @@
   /* one hover: up and back down; the breath runs on its own, a little slower */
   --hover: 3.6s;
   --breath: 4.6s;
-  /* the pill floats on its own, quicker and out of step with the head */
-  --pill-hover: 2.7s;
+  /* the pill follows the head's hover this much later */
+  --pill-lag: 0.45s;
 }
 
 * {
@@ -85,17 +85,24 @@ body {
     opacity: 0.7;
   }
 }
-/* the pill drifting about the head (drawing units): `translate`, apart from the pose on `transform` */
-@keyframes pill-hover {
+/* the pill, held where the head was a moment ago: the hold undoes the head's hover (drawing units: the svg is 184
+   wide, the hover 2.5 % of it), the pill makes it again, `--pill-lag` late */
+@keyframes hover-undo {
   0%,
   100% {
     translate: 0 0;
   }
-  30% {
-    translate: 0.6px -3.2px;
+  50% {
+    translate: 0 4.6px;
   }
-  65% {
-    translate: -0.5px 1.6px;
+}
+@keyframes hover-redo {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -4.6px;
   }
 }
 /* breathing: in a touch wider and taller, from the bottom of the head */
@@ -130,8 +137,11 @@ body {
   transform-box: fill-box;
   transform-origin: center;
 }
+.sibot .sibot-pill-hold {
+  animation: hover-undo var(--hover) ease-in-out infinite;
+}
 .sibot .sibot-pill {
-  animation: pill-hover var(--pill-hover) ease-in-out -0.9s infinite;
+  animation: hover-redo var(--hover) ease-in-out var(--pill-lag) infinite;
   transform: translate(calc(var(--sibot-pill-x, 0) * 1px), calc(var(--sibot-pill-y, 0) * 1px))
     rotate(calc(var(--sibot-pill-r, 0) * 1deg));
 }
@@ -146,6 +156,7 @@ body {
   .bot,
   .floor,
   .sibot,
+  .sibot .sibot-pill-hold,
   .sibot .sibot-pill {
     animation: none;
   }
