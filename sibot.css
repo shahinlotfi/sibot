@@ -149,6 +149,19 @@ body {
   fill: currentColor;
   stroke: none;
 }
+/* grab it by its shapes; the empty corners of its box let the pointer through */
+.bot {
+  pointer-events: none;
+}
+.sibot :is(circle, rect, ellipse) {
+  pointer-events: auto;
+  cursor: grab;
+}
+/* dragging: grabbing wherever the pointer is, on it or off it */
+html:has(.bot[data-dragging]),
+html:has(.bot[data-dragging]) * {
+  cursor: grabbing !important;
+}
 .sibot .sibot-eye {
   fill: var(--sibot-eye, #fff);
 }

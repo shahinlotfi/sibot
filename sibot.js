@@ -5,8 +5,12 @@
  * Its eyes look toward the pointer, all the way to the rims once the pointer is past the head. The pill drifts
  * gently the way the eyes look and stays there: up as they look up, down as they look down, and tipped as they look
  * across (right end down looking right, up looking left, the same above and below). Both change smoothly all the way
- * round, so circling the pointer turns it steadily. It follows where the pointer is, not how it moves, so it doesn't swing out and back with every move. It
- * leans a little toward the pointer.
+ * round, so circling the pointer turns it steadily. It follows where the pointer is, not how it moves, so it doesn't
+ * swing out and back with every move. It leans a little toward the pointer.
+ *
+ * Grab it and it comes along, reluctantly: it trails the pointer as if through friction, gives less the further it's
+ * pulled, leans back against the pull and looks back at the middle. Let go and it springs back there, overshooting a
+ * little.
  *
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
  * circled and the pupils roll round their eyes, both slowing to a stop, then it shakes it off and looks again.
@@ -45,6 +49,14 @@ const UNWOUND = 0.4;
 const DIZZY = { spin: 1800, pill: 3, eyes: 4, shake: 450 };
 /** the shake: side to side as a share of its size, degrees, and how many times */
 const SHAKE = { x: 0.08, deg: 9, times: 10 };
+/** dragged: the most it gives, as a share of its size (it gives less and less the further it's pulled) */
+const GIVE = 0.32;
+/** dragged: ms for it to catch up with where it's pulled to: the friction */
+const DRAG_MS = 120;
+/** dragged: the most it leans back against the pull (degrees) */
+const RESIST = 9;
+/** let go: the spring back to the middle, in swings per second, and its damping (below 1, it overshoots a little) */
+const SPRING = { hz: 1.6, damp: 0.38 };
 
 const easeOut = (u) => 1 - (1 - u) ** 3;
 
@@ -81,8 +93,28 @@ let dir = null;
 let wound = 0;
 /** dizzy since then, spinning this way (±1); the pill's pose when it began */
 let dizzy = null;
+/** where it's been pulled from the middle (px), and how fast it's going (px per second) */
+const off = { x: 0, y: 0 };
+const vel = { x: 0, y: 0 };
+/** being dragged: by this pointer, from here, and how far it had been pulled when grabbed (before the give) */
+let drag = null;
 let frame = 0;
 let last = 0;
+
+/** a pull (px) to how far it gives: all of it at first, less and less after, never past `GIVE` of its size */
+const give = (pull) => {
+  const most = GIVE * box.size;
+  const d = Math.hypot(pull.x, pull.y);
+  const k = d ? (most * (1 - Math.exp(-d / most))) / d : 0;
+  return { x: pull.x * k, y: pull.y * k };
+};
+/** how far it gives (px) back to the pull it took */
+const pullFor = (o) => {
+  const most = GIVE * box.size;
+  const d = Math.min(Math.hypot(o.x, o.y), most * 0.999);
+  const k = d ? -most * Math.log(1 - d / most) / d : 0;
+  return { x: o.x * k, y: o.y * k };
+};
 
 /** the share of a gap closed in `dt` ms by an ease with time constant `tau` */
 const ease = (dt, tau) => (still ? 1 : 1 - Math.exp(-dt / tau));
@@ -119,7 +151,8 @@ const setPose = (p, [[lx, ly], [rx, ry]]) => {
 
 const draw = (t) => {
   const d = dizzy ? t - dizzy.t0 : -1;
-  let tilt = lean;
+  // dragged (or springing back), it leans back against the way it's pulled
+  let tilt = lean - (off.x / (GIVE * box.size)) * RESIST;
   let jolt = 0;
   let eyes = look();
   let { shift, turn } = pill();
@@ -136,13 +169,18 @@ const draw = (t) => {
     const v = (d - DIZZY.spin) / DIZZY.shake;
     const w = Math.sin(v * Math.PI * 2 * SHAKE.times) * (1 - v);
     jolt = w * SHAKE.x * box.size * HEAD;
-    tilt = w * SHAKE.deg;
+    tilt += w * SHAKE.deg - lean;
     const b = easeOut(v);
     const from = [roll(-Math.PI / 2), roll(Math.PI / 2)];
     eyes = eyes.map((e, i) => [from[i][0] + (e[0] - from[i][0]) * b, from[i][1] + (e[1] - from[i][1]) * b]);
   }
-  bot.style.transform = `translateX(${jolt}px) rotate(${tilt}deg)`;
-  floor.style.transform = `translateX(${jolt * 0.6}px) scaleX(${1 - Math.abs(tilt) / 90})`;
+  bot.style.transform = `translate(${off.x + jolt}px, ${off.y}px) rotate(${tilt}deg)`;
+  // the shadow stays on the floor under it, smaller the higher it's lifted
+  const lift = Math.max(0, -off.y) / box.size;
+  floor.style.transform =
+    `translate(${off.x + jolt * 0.6}px, ${Math.max(0, off.y)}px) ` +
+    `scale(${(1 - Math.abs(tilt) / 90) * (1 - lift)}, ${1 - lift})`;
+  floor.style.opacity = `${1 - lift * 1.5}`;
   setPose([shift, turn], eyes);
 };
 
@@ -158,9 +196,28 @@ const step = (t) => {
   moved.x = moved.y = 0;
   const run = Math.hypot(pace.x, pace.y);
 
-  // circling fast winds it up; turning back and forth unwinds it
+  // dragged: it trails where it's pulled to; let go: it springs back to the middle
+  if (drag) {
+    const to = give({ x: target.x - drag.x + drag.pull.x, y: target.y - drag.y + drag.pull.y });
+    const k = ease(dt, DRAG_MS);
+    vel.x = ((to.x - off.x) * k * 1000) / dt;
+    vel.y = ((to.y - off.y) * k * 1000) / dt;
+    off.x += (to.x - off.x) * k;
+    off.y += (to.y - off.y) * k;
+  } else if (still) {
+    off.x = off.y = vel.x = vel.y = 0;
+  } else {
+    const w = 2 * Math.PI * SPRING.hz;
+    const h = dt / 1000;
+    for (const a of ['x', 'y']) {
+      vel[a] += (-w * w * off[a] - 2 * SPRING.damp * w * vel[a]) * h;
+      off[a] += vel[a] * h;
+    }
+  }
+
+  // circling fast winds it up; turning back and forth unwinds it (not while dragging it about)
   wind *= Math.exp(-dt / WIND_MS);
-  if (run > FAST && !dizzy && !still) {
+  if (run > FAST && !dizzy && !drag && !still) {
     const now = { x: pace.x / run, y: pace.y / run };
     if (dir) wind += Math.atan2(dir.x * now.y - dir.y * now.x, dir.x * now.x + dir.y * now.y);
     dir = now;
@@ -173,11 +230,16 @@ const step = (t) => {
   }
   if (dizzy && t - dizzy.t0 > DIZZY.spin + DIZZY.shake) dizzy = null;
 
-  // where the eyes want to be: toward the pointer, at the rims once it's past REACH; straight ahead when it's gone
+  // where the eyes want to be: toward the pointer, at the rims once it's past REACH; straight ahead when it's gone;
+  // dragged, back at the middle, where it would rather be
   let aim = { x: 0, y: 0 };
-  if (over) {
-    const dx = target.x - box.x;
-    const dy = target.y - box.y;
+  if (drag) {
+    const d = Math.hypot(off.x, off.y);
+    const k = d ? -Math.min(1, d / (box.r * 0.5)) / d : 0;
+    aim = { x: off.x * k, y: off.y * k };
+  } else if (over) {
+    const dx = target.x - (box.x + off.x);
+    const dy = target.y - (box.y + off.y);
     const reach = box.r * REACH;
     const k = 1 / Math.max(reach, Math.hypot(dx, dy));
     aim = { x: dx * k, y: dy * k };
@@ -195,11 +257,16 @@ const step = (t) => {
   const settled =
     !dizzy &&
     !wound &&
+    !drag &&
+    Math.hypot(off.x, off.y) < 0.1 &&
+    Math.hypot(vel.x, vel.y) < 1 &&
     run < 0.05 &&
     Math.hypot(aim.x - gaze.x, aim.y - gaze.y) < 0.002 &&
     Math.hypot(gaze.x - swing.x, gaze.y - swing.y) < 0.002 &&
     Math.abs(gaze.x * LEAN - lean) < 0.01;
   if (settled) {
+    off.x = off.y = vel.x = vel.y = 0;
+    draw(t);
     frame = 0;
     last = 0;
     return;
@@ -228,6 +295,24 @@ addEventListener('pointerdown', (e) => {
   target.y = e.clientY;
   wake();
 });
+// grab it by its shapes (not the empty corners of its box)
+svg.addEventListener('pointerdown', (e) => {
+  if (e.target === svg || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  e.preventDefault();
+  e.target.setPointerCapture(e.pointerId);
+  // grabbed mid-spring: carry on from where it is
+  drag = { id: e.pointerId, x: e.clientX, y: e.clientY, pull: pullFor(off) };
+  bot.toggleAttribute('data-dragging', true);
+  wake();
+});
+const letGo = (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  drag = null;
+  bot.toggleAttribute('data-dragging', false);
+  wake();
+};
+addEventListener('pointerup', letGo);
+addEventListener('pointercancel', letGo);
 document.documentElement.addEventListener('pointerleave', () => {
   over = false;
   wake();
