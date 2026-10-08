@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SIbot</title>
+    <meta name="description" content="SIbot, the Super Intelligence Bot. It watches your pointer. Don't make it dizzy." />
+    <meta name="theme-color" content="#eceef2" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="sibot.css" />
+  </head>
+  <body>
+    <main class="stage">
+      <div class="bot" aria-label="SIbot" role="img">
+        <!-- SIbot: a head, a pill and two eyes. Units are the drawing's, head radius 63.44. -->
+        <svg class="sibot" viewBox="-92 -92 184 184" aria-hidden="true">
+          <circle r="63.44" />
+          <rect class="sibot-pill" x="-88.605" y="-44.24" width="177.21" height="88.48" rx="44.24" />
+          <g transform="translate(-17.4 0)">
+            <ellipse class="sibot-eye" rx="14.26" ry="21.39" />
+            <circle class="sibot-pupil l" r="6.57" />
+          </g>
+          <g transform="translate(17.4 0)">
+            <ellipse class="sibot-eye" rx="14.26" ry="21.39" />
+            <circle class="sibot-pupil r" r="6.57" />
+          </g>
+        </svg>
+      </div>
+      <div class="floor" aria-hidden="true"></div>
+    </main>
+    <script type="module" src="sibot.js"></script>
+  </body>
+</html>
