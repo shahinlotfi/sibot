@@ -2,7 +2,7 @@
 
 SIbot, the Super Intelligence Bot from Floorstack, on a page of its own. It sits in the middle of the window at 64 % of
 the window's shorter side and watches your pointer, hovering and breathing while it waits. Circle the pointer fast a few times and it gets dizzy.
-On a phone it feels the phone move: tip it and it looks downhill, move it and it swings, shake it hard or spin
+On a phone it feels the phone move: tip it and it looks uphill, move it and it swings the same way, shake it hard or spin
 it round and it gets dizzy. iPhones ask for permission on the first tap, and only over HTTPS.
 
 Plain HTML, CSS and JavaScript: no build step, no dependencies. The name in the background is set in

@@ -16,9 +16,9 @@
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
  * circled and the pupils roll round their eyes, both slowing to a stop, then it shakes it off and looks again.
  *
- * On a phone it feels the phone move (iPhones ask first, on the first tap). Tip the phone and it looks downhill, the
+ * On a phone it feels the phone move (iPhones ask first, on the first tap). Tip the phone and it looks uphill, the
  * way it would look at the pointer; hold it at a new angle for a while and that becomes level. Move the phone and it
- * swings the other way, as if left behind, and springs back. Shake the phone hard, or spin it round a turn or two,
+ * swings the same way, as if pulled along, and springs back. Shake the phone hard, or spin it round a turn or two,
  * and it gets dizzy.
  */
 
@@ -291,7 +291,7 @@ const step = (t) => {
   }
   if (dizzy && t - dizzy.t0 > DIZZY.spin + DIZZY.shake) dizzy = null;
 
-  // where the eyes want to be: toward the pointer, at the rims once it's past REACH; with no pointer, downhill on a
+  // where the eyes want to be: toward the pointer, at the rims once it's past REACH; with no pointer, uphill on a
   // tipped phone, or straight ahead; dragged, back at the middle, where it would rather be
   let aim = { x: 0, y: 0 };
   if (drag) {
@@ -410,7 +410,8 @@ addEventListener('deviceorientation', (e) => {
   const dy = (down.y - level.y) / TILT;
   const d = Math.max(1, Math.hypot(dx, dy));
   const was = tipped ?? { x: 0, y: 0 };
-  tipped = { x: dx / d, y: dy / d };
+  // it looks up the slope, away from the way the phone tips
+  tipped = { x: -dx / d, y: -dy / d };
   if (Math.hypot(tipped.x - was.x, tipped.y - was.y) > 0.005) wake();
 });
 // turned between portrait and landscape: level is however it's held now
@@ -418,7 +419,7 @@ screen.orientation?.addEventListener('change', () => {
   level = null;
 });
 
-// moved: it's left behind and swings the other way; shaken hard or spun round, it gets dizzy
+// moved: it's pulled along and swings the same way; shaken hard or spun round, it gets dizzy
 addEventListener('devicemotion', (e) => {
   const t = performance.now();
   const h = sensed ? Math.min(50, t - sensed) / 1000 : 0;
@@ -429,8 +430,8 @@ addEventListener('devicemotion', (e) => {
     const jolt = Math.hypot(m.x, m.y);
     shaken = shaken * Math.exp((-h * 1000) / SHAKEN.ms) + jolt * h;
     if (jolt > JITTER && !drag && !still) {
-      push.x -= m.x * SWAY * box.size * h;
-      push.y -= m.y * SWAY * box.size * h;
+      push.x += m.x * SWAY * box.size * h;
+      push.y += m.y * SWAY * box.size * h;
       wake();
     }
     if (shaken > SHAKEN.at && !dizzy && !drag && !still) {
