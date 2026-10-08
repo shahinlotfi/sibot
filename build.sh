@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 rm -rf dist sibot.zip
 mkdir dist
-cp index.html sibot.css sibot.js favicon.svg dist/
+cp index.html sibot.css sibot.js favicon.svg apple-touch-icon.png og-image.png dist/
 (cd dist && zip -qr ../sibot.zip .)
 echo "dist/ and sibot.zip ready:"
 ls -l dist

@@ -22,7 +22,8 @@ python3 -m http.server 4719   # then open http://localhost:4719
 ./build.sh
 ```
 
-Writes the four site files to `dist/` (and `sibot.zip`). Upload the contents of `dist/` to your web root over FTP.
+Writes the site files to `dist/` (and `sibot.zip`). Upload the contents of `dist/` over FTP to the folder it's served from (`https://perfectpixel.se/sibot/`; the canonical
+link and the share tags in `index.html` name that address).
 
 ## Deploy
 
