@@ -3,7 +3,7 @@
   --bg: #eceef2;
   --bg-2: #dfe2e8;
   --accent: #ff5b1f; /* SIbot's body */
-  --sibot-eye: #fff;
+  --sibot-eye: #121316; /* as in Floorstack's toolbar */
   /* 64 % of the browser: of the shorter side, so it always fits */
   --size: min(64vw, 64vh);
   /* one hover: up and back down; the breath runs on its own, a little slower */
