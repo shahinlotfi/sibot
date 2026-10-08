@@ -15,6 +15,11 @@
  *
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
  * circled and the pupils roll round their eyes, both slowing to a stop, then it shakes it off and looks again.
+ *
+ * On a phone it feels the phone move (iPhones ask first, on the first tap). Tip the phone and it looks downhill, the
+ * way it would look at the pointer; hold it at a new angle for a while and that becomes level. Move the phone and it
+ * swings the other way, as if left behind, and springs back. Shake the phone hard, or spin it round a turn or two,
+ * and it gets dizzy.
  */
 
 /** how far the pill can shift up or down before its edge passes the head's (head radius less half the pill's height) */
@@ -64,6 +69,19 @@ const HOLD = { ms: 3000, struggle: 900 };
 const STRUGGLE = { x: 0.035, deg: 10, times: 11 };
 /** breaking free: the push back toward the middle, in times its distance from there per second */
 const KICK = 5;
+/** the phone tipped this far from level (the sine of the angle, about 24°) has the eyes at their rims */
+const TILT = 0.4;
+/** ms for level to become however the phone is held now */
+const LEVEL_MS = 6000;
+/** the phone's movement below this (m/s²) is the sensor's jitter */
+const JITTER = 0.4;
+/** how far moving the phone swings it: px per second of its speed, per m/s², for each px of its size */
+const SWAY = 1;
+/** shaken: m/s of jolting, adding up and dying away over `ms`, that makes it dizzy */
+const SHAKEN = { at: 6, ms: 400 };
+/** spun round: a turn of the phone winds it up as much as this many circles of the pointer; slower than `slow`
+ * (degrees per second), the spinning has stopped */
+const SPUN = { gain: 2, slow: 60 };
 
 const easeOut = (u) => 1 - (1 - u) ** 3;
 
@@ -107,6 +125,16 @@ const vel = { x: 0, y: 0 };
 let drag = null;
 /** struggling free: how far through, 0..1; not struggling: -1 */
 let struggle = -1;
+/** the phone: which way is down across its screen (y down, the sine of the slope each way), and level */
+let level = null;
+/** where the phone's tilt has the eyes look (length up to 1), once it has said */
+let tipped = null;
+/** the phone's movement since the last frame (px per second), its jolting lately, its spin (degrees per second, +
+ * anticlockwise) and when it last said */
+const push = { x: 0, y: 0 };
+let shaken = 0;
+let spin = 0;
+let sensed = 0;
 let frame = 0;
 let last = 0;
 
@@ -235,10 +263,18 @@ const step = (t) => {
     const w = 2 * Math.PI * SPRING.hz;
     const h = dt / 1000;
     for (const a of ['x', 'y']) {
-      vel[a] += (-w * w * off[a] - 2 * SPRING.damp * w * vel[a]) * h;
+      vel[a] += push[a] + (-w * w * off[a] - 2 * SPRING.damp * w * vel[a]) * h;
       off[a] += vel[a] * h;
     }
+    // swung about by the phone, never further than it gives to a pull
+    const most = GIVE * box.size;
+    const d = Math.hypot(off.x, off.y);
+    if (d > most) {
+      off.x *= most / d;
+      off.y *= most / d;
+    }
   }
+  push.x = push.y = 0;
 
   // circling fast winds it up; turning back and forth unwinds it (not while dragging it about)
   wind *= Math.exp(-dt / WIND_MS);
@@ -248,15 +284,15 @@ const step = (t) => {
     dir = now;
   } else dir = null;
   if (Math.abs(wind) > DIZZY_AT && !dizzy) wound = Math.sign(wind);
-  if (wound && (run <= FAST || Math.abs(wind) < DIZZY_AT * UNWOUND)) {
+  if (wound && ((run <= FAST && Math.abs(spin) < SPUN.slow) || Math.abs(wind) < DIZZY_AT * UNWOUND)) {
     dizzy = { t0: t, way: wound, ...pill() };
     wound = 0;
     wind = 0;
   }
   if (dizzy && t - dizzy.t0 > DIZZY.spin + DIZZY.shake) dizzy = null;
 
-  // where the eyes want to be: toward the pointer, at the rims once it's past REACH; straight ahead when it's gone;
-  // dragged, back at the middle, where it would rather be
+  // where the eyes want to be: toward the pointer, at the rims once it's past REACH; with no pointer, downhill on a
+  // tipped phone, or straight ahead; dragged, back at the middle, where it would rather be
   let aim = { x: 0, y: 0 };
   if (drag) {
     const d = Math.hypot(off.x, off.y);
@@ -268,6 +304,8 @@ const step = (t) => {
     const reach = box.r * REACH;
     const k = 1 / Math.max(reach, Math.hypot(dx, dy));
     aim = { x: dx * k, y: dy * k };
+  } else if (tipped) {
+    aim = { ...tipped };
   }
   const g = ease(dt, GAZE_MS);
   gaze.x += (aim.x - gaze.x) * g;
@@ -346,6 +384,80 @@ addEventListener('resize', () => {
   measure();
   wake();
 });
+
+/** a direction across the phone (x right, y down, as it's held upright) to the same direction across the screen,
+ * which turns with the phone */
+const onScreen = (x, y) => {
+  const a = ((screen.orientation?.angle ?? window.orientation ?? 0) * Math.PI) / 180;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return { x: x * c + y * s, y: y * c - x * s };
+};
+
+// tipped: which way is down across the screen, against level
+addEventListener('deviceorientation', (e) => {
+  if (e.beta == null || e.gamma == null) return;
+  const b = (e.beta * Math.PI) / 180;
+  const g = (e.gamma * Math.PI) / 180;
+  const down = onScreen(Math.cos(b) * Math.sin(g), Math.sin(b));
+  const t = performance.now();
+  if (!level) level = { ...down, t };
+  const k = 1 - Math.exp(-Math.min(100, t - level.t) / LEVEL_MS);
+  level.x += (down.x - level.x) * k;
+  level.y += (down.y - level.y) * k;
+  level.t = t;
+  const dx = (down.x - level.x) / TILT;
+  const dy = (down.y - level.y) / TILT;
+  const d = Math.max(1, Math.hypot(dx, dy));
+  const was = tipped ?? { x: 0, y: 0 };
+  tipped = { x: dx / d, y: dy / d };
+  if (Math.hypot(tipped.x - was.x, tipped.y - was.y) > 0.005) wake();
+});
+// turned between portrait and landscape: level is however it's held now
+screen.orientation?.addEventListener('change', () => {
+  level = null;
+});
+
+// moved: it's left behind and swings the other way; shaken hard or spun round, it gets dizzy
+addEventListener('devicemotion', (e) => {
+  const t = performance.now();
+  const h = sensed ? Math.min(50, t - sensed) / 1000 : 0;
+  sensed = t;
+  const a = e.acceleration;
+  if (a && a.x != null && a.y != null) {
+    const m = onScreen(a.x, -a.y);
+    const jolt = Math.hypot(m.x, m.y);
+    shaken = shaken * Math.exp((-h * 1000) / SHAKEN.ms) + jolt * h;
+    if (jolt > JITTER && !drag && !still) {
+      push.x -= m.x * SWAY * box.size * h;
+      push.y -= m.y * SWAY * box.size * h;
+      wake();
+    }
+    if (shaken > SHAKEN.at && !dizzy && !drag && !still) {
+      wound = Math.sign(m.x) || 1;
+      shaken = 0;
+      wake();
+    }
+  }
+  const r = e.rotationRate;
+  spin = r?.alpha ?? 0;
+  if (Math.abs(spin) > SPUN.slow && !dizzy && !drag && !still) {
+    // spun anticlockwise, the world turns clockwise round it
+    wind += ((spin * Math.PI) / 180) * h * SPUN.gain;
+    wake();
+  }
+});
+
+// iPhones ask before a page may feel the phone move, and only on a tap (a touch counts once it's lifted)
+addEventListener(
+  'touchend',
+  () => {
+    for (const E of [globalThis.DeviceMotionEvent, globalThis.DeviceOrientationEvent]) {
+      E?.requestPermission?.().catch(() => {});
+    }
+  },
+  { once: true },
+);
 
 measure();
 draw(0);
