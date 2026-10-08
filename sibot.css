@@ -1,12 +1,3 @@
-/* Oi by Kostas Bartsokas, SIL Open Font License 1.1 (Latin set, from Google Fonts) */
-@font-face {
-  font-family: 'Oi';
-  font-style: normal;
-  font-weight: 400;
-  font-display: block;
-  src: url('fonts/oi-latin.woff2') format('woff2');
-}
-
 :root {
   color-scheme: light;
   --bg: #eceef2;
@@ -62,9 +53,13 @@ body {
   animation: hover var(--hover) ease-in-out infinite;
 }
 
-/* the name behind it, edge to edge across the window at any width */
+/* the name behind it, along the top of the window, edge to edge at any width */
 .wordmark {
   grid-area: 1 / 1;
+  align-self: start;
+  /* Oi's tallest letters reach 1.2 % of the size above a line-height-1 box: down by that, so they touch the top
+     rather than being cut by it */
+  margin-top: 0.013em;
   font-family: 'Oi', serif;
   /* "SIBot" in Oi is 4.356 times as wide as its size */
   font-size: calc(100vw / 4.356);

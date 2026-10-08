@@ -3,12 +3,12 @@
 SIbot, the Super Intelligence Bot from Floorstack, on a page of its own. It sits in the middle of the window at 64 % of
 the window's shorter side and watches your pointer, hovering and breathing while it waits. Circle the pointer fast a few times and it gets dizzy.
 
-Plain HTML, CSS and JavaScript: no build step, no dependencies.
+Plain HTML, CSS and JavaScript: no build step, no dependencies. The name in the background is set in
+[Oi](https://fonts.google.com/specimen/Oi), loaded from Google Fonts.
 
 - `index.html`: the page and the character's SVG
 - `sibot.css`: layout and the character's shapes, posed through `--sibot-*` custom properties
 - `sibot.js`: the motion (ported from Floorstack's `PointerBot`)
-- `fonts/oi-latin.woff2`: [Oi](https://fonts.google.com/specimen/Oi) by Kostas Bartsokas (SIL Open Font License 1.1), for the name in the background
 
 ## Run locally
 
@@ -22,7 +22,7 @@ python3 -m http.server 4719   # then open http://localhost:4719
 ./build.sh
 ```
 
-Writes the site files and `fonts/` to `dist/` (and `sibot.zip`). Upload the contents of `dist/` to your web root over FTP.
+Writes the four site files to `dist/` (and `sibot.zip`). Upload the contents of `dist/` to your web root over FTP.
 
 ## Deploy
 
