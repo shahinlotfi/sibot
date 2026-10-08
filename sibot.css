@@ -4,8 +4,11 @@
   --bg-2: #dfe2e8;
   --accent: #ff5b1f; /* SIbot's body */
   --sibot-eye: #fff;
-  /* 60 % of the browser: of the shorter side, so it always fits */
-  --size: min(60vw, 60vh);
+  /* 64 % of the browser: of the shorter side, so it always fits */
+  --size: min(64vw, 64vh);
+  /* one hover: up and back down; the breath runs on its own, a little slower */
+  --hover: 3.6s;
+  --breath: 4.6s;
 }
 
 * {
@@ -43,6 +46,8 @@ body {
   filter: drop-shadow(0 calc(var(--size) * 0.04) calc(var(--size) * 0.06) rgba(20, 26, 36, 0.18));
   transform-origin: 50% 85%;
   will-change: transform;
+  /* hovering: `translate`, apart from the lean and shake sibot.js sets on `transform` */
+  animation: hover var(--hover) ease-in-out infinite;
 }
 
 /* where it sits: a soft shadow just under the head */
@@ -54,6 +59,39 @@ body {
   border-radius: 50%;
   background: radial-gradient(closest-side, rgba(20, 26, 36, 0.22), transparent);
   will-change: transform;
+  /* smaller and fainter as it rises */
+  animation: shadow var(--hover) ease-in-out infinite;
+}
+
+@keyframes hover {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(var(--size) * -0.025);
+  }
+}
+@keyframes shadow {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 0.86;
+    opacity: 0.7;
+  }
+}
+/* breathing: in a touch wider and taller, from the bottom of the head */
+@keyframes breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  45% {
+    scale: 1.012 1.022;
+  }
 }
 
 /* ---- SIbot: the character (as in Floorstack's sibot.css) ---- */
@@ -62,6 +100,8 @@ body {
   width: 100%;
   height: 100%;
   overflow: visible;
+  transform-origin: 50% 84%;
+  animation: breathe var(--breath) ease-in-out infinite;
 }
 .sibot :is(circle, rect, ellipse) {
   fill: currentColor;
@@ -84,4 +124,12 @@ body {
 }
 .sibot .sibot-pupil.r {
   transform: translate(calc(var(--sibot-r-x, -0.17) * 1px), calc(var(--sibot-r-y, -0.49) * 1px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bot,
+  .floor,
+  .sibot {
+    animation: none;
+  }
 }

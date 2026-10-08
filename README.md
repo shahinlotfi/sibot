@@ -1,7 +1,7 @@
 # SIbot
 
-SIbot, the Super Intelligence Bot from Floorstack, on a page of its own. It sits in the middle of the window at 60 % of
-the window's shorter side and watches your pointer. Circle the pointer fast a few times and it gets dizzy.
+SIbot, the Super Intelligence Bot from Floorstack, on a page of its own. It sits in the middle of the window at 64 % of
+the window's shorter side and watches your pointer, hovering and breathing while it waits. Circle the pointer fast a few times and it gets dizzy.
 
 Plain HTML, CSS and JavaScript: no build step, no dependencies.
 

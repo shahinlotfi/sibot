@@ -55,7 +55,7 @@ const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** the bot's middle and head radius on screen (px) */
 const box = { x: 0, y: 0, r: 1, size: 1 };
 const measure = () => {
-  // centred in the window at 60 % of its shorter side (sibot.css); not the element's rect, which leans
+  // centred in the window at 64 % of its shorter side (sibot.css); not the element's rect, which leans
   box.size = bot.offsetWidth;
   box.x = innerWidth / 2;
   box.y = innerHeight / 2;
