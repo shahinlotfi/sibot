@@ -2,11 +2,11 @@
  * SIbot sitting in the middle of the page, watching the pointer. Ported from Floorstack's PointerBot: there it rides
  * the pointer; here it stays put and only turns to look.
  *
- * Its eyes look toward the pointer, all the way to the rims once the pointer is past the head. While the pointer
- * moves, the pill goes the way the eyes do: up to the head's top edge looking up, down to its bottom edge looking
- * down, tipped a little looking on a diagonal (right end up looking down-right, the other way round from Floorstack),
- * level looking sideways. It leans a little toward the pointer. Once the pointer stops, the pill settles level and the
- * eyes stay on it.
+ * Its eyes look toward the pointer, all the way to the rims once the pointer is past the head. The pill drifts
+ * gently the way the eyes look and stays there: a little up looking up, a little down looking down, tipped a little
+ * looking on a diagonal (right end up looking down-right, the other way round from Floorstack), level looking
+ * sideways. It follows where the pointer is, not how it moves, so it doesn't swing out and back with every move. It
+ * leans a little toward the pointer.
  *
  * Circle the pointer fast and, once the circling ends, it gets dizzy: the pill spins round and round the way it was
  * circled and the pupils roll round their eyes, both slowing to a stop, then it shakes it off and looks again.
@@ -23,12 +23,10 @@ const HEAD = 63.44 / 184;
 const REACH = 2.2;
 /** ms for the eyes to turn to a new spot */
 const GAZE_MS = 70;
-/** after the pointer stops, ms the pill keeps its swing before it settles level */
-const GAZE_HOLD = 450;
-/** px per 60 fps frame of pointer travel that reads as a move (below it, jitter) */
-const MOVING = 0.4;
-/** ms for the pill to swing to a new look, and back level once it stops */
-const PILL_MS = 110;
+/** ms for the pill to drift to a new look: slower than the eyes, and with no overshoot */
+const PILL_MS = 260;
+/** how far the pill shifts looking straight up or down, as a share of the way to the head's edge */
+const PILL_SHIFT = 0.35;
 /** the most the pill tips looking on a diagonal (degrees; negative: right end up looking down-right) */
 const PILL_TURN = -14;
 /** the most it leans toward the pointer (degrees) */
@@ -73,10 +71,9 @@ const moved = { x: 0, y: 0 };
 const pace = { x: 0, y: 0 };
 /** where the eyes look: a direction, length up to 1 (1 = the eye's rim) */
 const gaze = { x: 0, y: 0 };
-/** the look the pill shows: the gaze while moving, nothing once stopped (length 0..1) */
+/** the look the pill shows: the gaze, a beat behind (length 0..1) */
 const swing = { x: 0, y: 0 };
 let lean = 0;
-let lastMove = -Infinity;
 /** the pointer's turning lately (radians, + clockwise on screen), and its direction last frame while fast */
 let wind = 0;
 let dir = null;
@@ -96,7 +93,7 @@ const pill = () => {
   const r = Math.hypot(swing.x, swing.y);
   const th = Math.atan2(swing.y, swing.x);
   return {
-    shift: r ? PILL_EDGE * (swing.y / r) * Math.cos(2 * th) ** 2 * r : 0,
+    shift: r ? PILL_SHIFT * PILL_EDGE * (swing.y / r) * Math.cos(2 * th) ** 2 * r : 0,
     turn: PILL_TURN * Math.sin(2 * th) * r,
   };
 };
@@ -135,8 +132,9 @@ const draw = (t) => {
     // spinning: the pill turns round from its pose, the pupils roll round the rims half a turn apart
     const u = easeOut(d / DIZZY.spin);
     const phi = dizzy.way * Math.PI * 2 * DIZZY.eyes * u - Math.PI / 2;
-    shift = dizzy.shift * (1 - u);
-    turn = dizzy.turn * (1 - u) + dizzy.way * 360 * DIZZY.pill * u;
+    // and lands on the pose it has now, so nothing jumps when the spin ends
+    shift = dizzy.shift * (1 - u) + shift * u;
+    turn = dizzy.turn * (1 - u) + (turn + dizzy.way * 360 * DIZZY.pill) * u;
     eyes = [roll(phi), roll(phi + Math.PI)];
   } else if (dizzy) {
     // shaking it off: side to side, dying away, the pupils finding the pointer again
@@ -189,16 +187,12 @@ const step = (t) => {
     const k = 1 / Math.max(reach, Math.hypot(dx, dy));
     aim = { x: dx * k, y: dy * k };
   }
-  if (dizzy) lastMove = -Infinity;
-  else if (run > MOVING) lastMove = t;
-
   const g = ease(dt, GAZE_MS);
   gaze.x += (aim.x - gaze.x) * g;
   gaze.y += (aim.y - gaze.y) * g;
   const s = ease(dt, PILL_MS);
-  const moving = t - lastMove <= GAZE_HOLD;
-  swing.x += ((moving ? gaze.x : 0) - swing.x) * s;
-  swing.y += ((moving ? gaze.y : 0) - swing.y) * s;
+  swing.x += (gaze.x - swing.x) * s;
+  swing.y += (gaze.y - swing.y) * s;
   lean += (gaze.x * LEAN - lean) * ease(dt, LEAN_MS);
 
   draw(t);
@@ -208,7 +202,7 @@ const step = (t) => {
     !wound &&
     run < 0.05 &&
     Math.hypot(aim.x - gaze.x, aim.y - gaze.y) < 0.002 &&
-    Math.hypot(swing.x, swing.y) < 0.01 &&
+    Math.hypot(gaze.x - swing.x, gaze.y - swing.y) < 0.002 &&
     Math.abs(gaze.x * LEAN - lean) < 0.01;
   if (settled) {
     frame = 0;
